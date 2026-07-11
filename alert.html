@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 알람시계 & 타이머</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'sans-serif'],
+                        digital: ['Orbitron', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for slick list views */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
+        /* Smooth scale transitions */
+        .tab-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 light-theme-style">
+    <div class="flex flex-col min-h-screen">
+        <!-- Top Navigation Bar -->
+        <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3 md:px-8 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-clock-rotate-left text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Horology Suite</h1>
+                    <p class="text-xs text-slate-400">Premium Alarm & Utilities</p>
+                </div>
+            </div>
+            
+            <!-- Theme and Utilities Buttons -->
+            <div class="flex items-center space-x-2">
+                <button id="themeToggle" class="w-10 h-10 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-800/50 flex items-center justify-center text-slate-300 transition-all hover:bg-slate-800" title="테마 변경">
+                    <i class="fa-solid fa-moon text-lg" id="themeIcon"></i>
+                </button>
+                <button id="testSoundBtn" class="px-3 h-10 text-xs rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-800/50 flex items-center space-x-2 text-slate-300 transition-all hover:bg-slate-800" title="소리 테스트">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span class="hidden md:inline">음향 확인</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Body Wrapper -->
+        <main class="flex-grow flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 gap-6 overflow-hidden">
+            
+            <!-- Left Panel: Main Live Clock & Widget Display -->
+            <div class="w-full lg:w-5/12 flex flex-col gap-6 justify-start">
+                <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center text-center">
+                    <!-- Glassmorphism decorative circles -->
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Analog Clock Face Container -->
+                    <div class="relative w-48 h-48 mb-6 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" id="analogClock" viewBox="0 0 200 200">
+                            <!-- Outer Rim -->
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="currentColor" class="text-slate-800" stroke-width="6"/>
+                            <!-- Dial ticks -->
+                            <g stroke="currentColor" class="text-slate-700" stroke-width="2" stroke-linecap="round">
+                                <line x1="100" y1="12" x2="100" y2="20" />
+                                <line x1="100" y1="180" x2="100" y2="188" />
+                                <line x1="12" y1="100" x2="20" y2="100" />
+                                <line x1="180" y1="100" x2="188" y2="100" />
+                                <!-- Diagonals -->
+                                <line x1="156" y1="44" x2="150" y2="50" />
+                                <line x1="44" y1="156" x2="50" y2="150" />
+                                <line x1="44" y1="44" x2="50" y2="50" />
+                                <line x1="156" y1="156" x2="150" y2="150" />
+                            </g>
+                            <!-- Hour hand -->
+                            <line id="hourHand" x1="100" y1="100" x2="100" y2="55" stroke="currentColor" class="text-indigo-400" stroke-width="5" stroke-linecap="round"/>
+                            <!-- Minute hand -->
+                            <line id="minuteHand" x1="100" y1="100" x2="100" y2="35" stroke="currentColor" class="text-brand-500" stroke-width="3" stroke-linecap="round"/>
+                            <!-- Second hand -->
+                            <line id="secondHand" x1="100" y1="100" x2="100" y2="25" stroke="currentColor" class="text-rose-500" stroke-width="1.5" stroke-linecap="round"/>
+                            <!-- Center cap -->
+                            <circle cx="100" cy="100" r="5" fill="currentColor" class="text-rose-500"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span class="text-slate-700 text-xs mt-32 tracking-wider">SEC SYNC</span>
+                        </div>
+                    </div>
+
+                    <!-- Digital Time Panel -->
+                    <div id="liveDigitalDate" class="text-sm font-semibold tracking-wide text-indigo-400 mb-1">2026년 7월 11일 토요일</div>
+                    <div id="liveDigitalTime" class="text-4xl md:text-5xl font-extrabold font-digital text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white tracking-widest drop-shadow-[0_2px_10px_rgba(99,102,241,0.2)]">10:24:55</div>
+                    <div class="flex items-center space-x-2 mt-4 px-3 py-1 bg-slate-800/40 rounded-full border border-slate-800 text-xs text-slate-400">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span id="activeAlarmsCounter">대기 중인 알람: 0개</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs (Vertical Menu/Compact Horizontal on Mobile) -->
+                <nav class="flex lg:flex-col p-1.5 bg-slate-900 border border-slate-800 rounded-2xl gap-1">
+                    <button onclick="switchTab('alarm')" id="tab-alarm" class="flex-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-1 sm:space-y-0 sm:space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-white bg-indigo-600/20 border border-indigo-500/30">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span>알람 설정</span>
+                    </button>
+                    <button onclick="switchTab('world')" id="tab-world" class="flex-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-1 sm:space-y-0 sm:space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                        <i class="fa-solid fa-earth-asia text-lg"></i>
+                        <span>세계 시계</span>
+                    </button>
+                    <button onclick="switchTab('stopwatch')" id="tab-stopwatch" class="flex-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-1 sm:space-y-0 sm:space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                        <i class="fa-solid fa-stopwatch text-lg"></i>
+                        <span>스톱워치</span>
+                    </button>
+                    <button onclick="switchTab('timer')" id="tab-timer" class="flex-1 flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-1 sm:space-y-0 sm:space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                        <i class="fa-solid fa-hourglass-half text-lg"></i>
+                        <span>타이머</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Right Panel: Active Module Area -->
+            <div class="w-full lg:w-7/12 flex flex-col bg-slate-900/50 border border-slate-800 rounded-3xl p-6 min-h-[480px] shadow-lg relative overflow-hidden">
+                
+                <!-- 1. ALARM PANEL -->
+                <div id="panel-alarm" class="tab-transition flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-indigo-500"></i> 스마트 알람 목록
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">지정한 시간에 울릴 오디오 스마트 시퀀스 및 다용도 리플레이 목록</p>
+                        </div>
+                        <button onclick="openAlarmModal()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> 알람 추가
+                        </button>
+                    </div>
+
+                    <!-- Alarm List Scroll Area -->
+                    <div id="alarmList" class="flex-grow overflow-y-auto max-h-[350px] space-y-3 pr-2 flex flex-col justify-start">
+                        <!-- Dynamic content filled by JavaScript -->
+                        <div class="flex flex-col items-center justify-center py-16 text-slate-500">
+                            <i class="fa-regular fa-bell-slash text-4xl mb-3"></i>
+                            <p class="text-sm font-medium">등록된 알람이 없습니다.</p>
+                            <button onclick="openAlarmModal()" class="text-indigo-400 text-xs mt-2 underline">첫 알람 만들어보기</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. WORLD CLOCK PANEL -->
+                <div id="panel-world" class="tab-transition hidden flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                                <i class="fa-solid fa-earth-asia text-emerald-500"></i> 글로벌 월드 타임
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">여러 타임존의 실시간 로컬 타임을 동기화하여 비교합니다.</p>
+                        </div>
+                        <button onclick="openWorldClockModal()" class="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> 도시 추가
+                        </button>
+                    </div>
+
+                    <div id="worldClockList" class="flex-grow overflow-y-auto max-h-[350px] space-y-3 pr-2">
+                        <!-- Dynamic content filled by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- 3. STOPWATCH PANEL -->
+                <div id="panel-stopwatch" class="tab-transition hidden flex flex-col h-full justify-between">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-indigo-400"></i> 고정밀 스톱워치
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">1/100초 단위로 정확히 동작하며 백그라운드 계산을 보증합니다.</p>
+                    </div>
+
+                    <!-- Digital Display -->
+                    <div class="flex flex-col items-center justify-center py-6">
+                        <div id="stopwatchDisplay" class="text-5xl md:text-6xl font-black font-digital text-white tracking-widest tabular-nums select-none bg-slate-950/40 border border-slate-800/80 rounded-2xl py-6 px-8 shadow-inner">
+                            00:00.00
+                        </div>
+                    </div>
+
+                    <!-- Lap Times Container -->
+                    <div class="flex-grow overflow-y-auto max-h-[160px] border border-slate-800 bg-slate-900/40 rounded-2xl p-3 mb-6">
+                        <table class="w-full text-xs text-left text-slate-400">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-500 font-semibold">
+                                    <th class="pb-2 w-16">구간 ID</th>
+                                    <th class="pb-2">구간 기록</th>
+                                    <th class="pb-2 text-right">누적 시각</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lapRecords" class="divide-y divide-slate-800/40">
+                                <!-- Dynamic Lap Times generated by JS -->
+                            </tbody>
+                        </table>
+                        <div id="noLapsMsg" class="text-center py-6 text-slate-600 text-xs">
+                            랩 타임을 측정하면 여기에 리스트업됩니다.
+                        </div>
+                    </div>
+
+                    <!-- Stopwatch Controls -->
+                    <div class="flex justify-center space-x-3">
+                        <button id="stopwatchResetBtn" onclick="resetStopwatch()" class="flex-1 py-3 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50" disabled>
+                            리셋 / 랩
+                        </button>
+                        <button id="stopwatchStartBtn" onclick="toggleStopwatch()" class="flex-[2_2_0%] py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 active:from-indigo-700 text-white shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center space-x-2">
+                            <i id="stopwatchStartIcon" class="fa-solid fa-play"></i>
+                            <span id="stopwatchStartText">시작하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. TIMER PANEL -->
+                <div id="panel-timer" class="tab-transition hidden flex flex-col h-full justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            <i class="fa-solid fa-hourglass-half text-rose-500"></i> 스마트 잔여 타이머
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">원클릭 프리셋 및 남은 시간을 직관적으로 보여주는 대시보드</p>
+                    </div>
+
+                    <!-- Timer Visual Arc Ring & Digital Value -->
+                    <div class="flex items-center justify-center py-6 relative">
+                        <svg class="w-36 h-36 transform -rotate-90">
+                            <circle cx="72" cy="72" r="66" stroke="currentColor" class="text-slate-800" stroke-width="4" fill="transparent" />
+                            <circle id="timerProgressRing" cx="72" cy="72" r="66" stroke="currentColor" class="text-rose-500" stroke-width="6" fill="transparent"
+                                stroke-dasharray="414.69" stroke-dashoffset="0" stroke-linecap="round" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="timerDisplay" class="text-3xl font-black font-digital text-white">00:00:00</span>
+                            <span id="timerSubLabel" class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Time Remaining</span>
+                        </div>
+                    </div>
+
+                    <!-- Fast Presets Selection -->
+                    <div id="timerPresets" class="grid grid-cols-4 gap-2 mb-4">
+                        <button onclick="presetTimer(60)" class="py-2 text-xs font-semibold bg-slate-800/60 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition-all">1분</button>
+                        <button onclick="presetTimer(300)" class="py-2 text-xs font-semibold bg-slate-800/60 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition-all">5분</button>
+                        <button onclick="presetTimer(600)" class="py-2 text-xs font-semibold bg-slate-800/60 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition-all">10분</button>
+                        <button onclick="presetTimer(1800)" class="py-2 text-xs font-semibold bg-slate-800/60 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition-all">30분</button>
+                    </div>
+
+                    <!-- Custom Custom Selector or Controls -->
+                    <div id="timerInputArea" class="flex items-center space-x-2 bg-slate-950/50 border border-slate-800 rounded-2xl p-3 mb-6">
+                        <div class="flex-1 flex flex-col items-center">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">시</span>
+                            <input type="number" id="timerHour" min="0" max="23" value="0" class="w-full text-center bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-white text-sm font-semibold rounded-lg py-1.5">
+                        </div>
+                        <span class="text-slate-600 font-bold mt-4">:</span>
+                        <div class="flex-1 flex flex-col items-center">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">분</span>
+                            <input type="number" id="timerMin" min="0" max="59" value="5" class="w-full text-center bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-white text-sm font-semibold rounded-lg py-1.5">
+                        </div>
+                        <span class="text-slate-600 font-bold mt-4">:</span>
+                        <div class="flex-1 flex flex-col items-center">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">초</span>
+                            <input type="number" id="timerSec" min="0" max="59" value="0" class="w-full text-center bg-slate-900 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none text-white text-sm font-semibold rounded-lg py-1.5">
+                        </div>
+                    </div>
+
+                    <!-- Timer Action Buttons -->
+                    <div class="flex gap-2">
+                        <button id="timerResetBtn" onclick="resetTimer()" class="flex-1 py-3 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50" disabled>
+                            설정 취소
+                        </button>
+                        <button id="timerStartBtn" onclick="toggleTimer()" class="flex-[2_2_0%] py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 active:from-rose-700 text-white shadow-lg shadow-rose-500/20 transition-all">
+                            타이머 가동
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Dynamic Modals / Overlays Area -->
+        
+        <!-- 1. ALARM REGISTER MODAL -->
+        <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+            <div class="bg-slate-900 border border-slate-800 w-full max-w-md mx-4 p-6 rounded-3xl shadow-2xl relative">
+                <button onclick="closeAlarmModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-plus text-indigo-500"></i> 새로운 스마트 알람 추가
+                </h3>
+
+                <form id="alarmForm" onsubmit="saveAlarm(event)" class="space-y-4">
+                    <!-- Standard Time Picker -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 font-semibold mb-1">시각</label>
+                            <select id="formHour" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-white text-sm outline-none">
+                                <!-- Generated by JS for convenience -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 font-semibold mb-1">분</label>
+                            <select id="formMinute" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-white text-sm outline-none">
+                                <!-- Generated by JS for convenience -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Label / Description -->
+                    <div>
+                        <label class="block text-xs text-slate-400 font-semibold mb-1">알람 이름</label>
+                        <input type="text" id="formLabel" placeholder="예: 기상 알람, 비타민 복용" max="25" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-white text-sm outline-none placeholder-slate-600">
+                    </div>
+
+                    <!-- Repeat Day Selector -->
+                    <div>
+                        <label class="block text-xs text-slate-400 font-semibold mb-2">반복 요일</label>
+                        <div class="grid grid-cols-7 gap-1">
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="0" class="hidden">
+                                <span class="text-rose-400 font-bold">일</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="1" class="hidden">
+                                <span>월</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="2" class="hidden">
+                                <span>화</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="3" class="hidden">
+                                <span>수</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="4" class="hidden">
+                                <span>목</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="5" class="hidden">
+                                <span>금</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer select-none text-xs hover:border-slate-700 transition-all has-[:checked]:bg-indigo-600/20 has-[:checked]:border-indigo-500">
+                                <input type="checkbox" name="repeatDays" value="6" class="hidden">
+                                <span class="text-sky-400 font-bold">토</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/10 transition-all">
+                        설정 완료 및 저장
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. WORLD CLOCK SELECTION MODAL -->
+        <div id="worldClockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+            <div class="bg-slate-900 border border-slate-800 w-full max-w-md mx-4 p-6 rounded-3xl shadow-2xl relative">
+                <button onclick="closeWorldClockModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-globe text-emerald-500"></i> 새로운 도시 추가
+                </h3>
+                <div class="space-y-3">
+                    <p class="text-xs text-slate-400">리스트에 추가하여 간편하게 타임존 시각을 확인할 수 있습니다.</p>
+                    <div id="timezoneSelectorArea" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <!-- Javascript generates interactive rows here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. EMERGENCY ALARM DISMISS BANNER (WHEN RINGS) -->
+        <div id="alarmRingerOverlay" class="fixed inset-0 z-[100] bg-indigo-950/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-6 hidden">
+            <div class="relative w-36 h-36 mb-8">
+                <!-- Ring waves design -->
+                <div class="absolute inset-0 bg-rose-500/20 rounded-full animate-ping"></div>
+                <div class="absolute inset-2 bg-indigo-500/20 rounded-full animate-pulse"></div>
+                <div class="absolute inset-4 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-2xl">
+                    <i class="fa-solid fa-bell text-5xl animate-bounce"></i>
+                </div>
+            </div>
+
+            <span id="ringTypeLabel" class="px-3 py-1 bg-rose-600/30 border border-rose-500/30 rounded-full text-rose-400 text-xs font-bold uppercase tracking-widest mb-2">ALARM RINGING</span>
+            <h2 id="ringLabelText" class="text-3xl md:text-4xl font-extrabold text-white mb-2">기상 알람!</h2>
+            <p id="ringDetailText" class="text-slate-400 text-sm mb-12">현재 시각 07:30</p>
+
+            <div class="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+                <!-- Snooze Button -->
+                <button onclick="triggerSnooze()" class="flex-1 py-4 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 text-slate-200 rounded-2xl font-bold transition-all shadow-lg">
+                    스누즈 (5분 연장)
+                </button>
+                <!-- Stop Button -->
+                <button onclick="dismissActiveAlarm()" class="flex-1 py-4 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-rose-500/30">
+                    알람 끄기
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Notification Toast -->
+        <div id="customToast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl flex items-center space-x-3 text-xs font-semibold shadow-2xl transition-all duration-300">
+            <i class="fa-solid fa-circle-info text-brand-500 text-base" id="toastIcon"></i>
+            <span id="toastMsg" class="text-slate-300">알람이 정상 보관되었습니다.</span>
+        </div>
+
+        <!-- Footer Footer info -->
+        <footer class="mt-auto py-6 border-t border-slate-800 text-center text-xs text-slate-500">
+            &copy; 2026 Horology Suite. Crafted perfectly with Web Audio API. Responsive, modern, smart.
+        </footer>
+    </div>
+
+    <script>
+        // WEB AUDIO API Sound generator (To play melodic beautiful alarms without relying on external broken asset URLs)
+        let audioContext = null;
+        let alarmIntervalId = null;
+
+        function getAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            return audioContext;
+        }
+
+        // Custom synthesizer melodic sound builder
+        function playChime(frequency, type = 'sine', duration = 0.4, startTimeOffset = 0) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime + startTimeOffset;
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, now);
+                
+                // Polyphonic fade to avoid pops
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + duration);
+            } catch (e) {
+                console.warn('Audio Context error or not initialized: ', e);
+            }
+        }
+
+        // Plays a complete pleasant morning melody chime
+        function playAlarmMelody() {
+            const sequence = [
+                { f: 523.25, d: 0.15 }, // C5
+                { f: 587.33, d: 0.15 }, // D5
+                { f: 659.25, d: 0.15 }, // E5
+                { f: 783.99, d: 0.3 }   // G5
+            ];
+            
+            sequence.forEach((note, index) => {
+                playChime(note.f, 'triangle', note.d, index * 0.18);
+            });
+        }
+
+        // Sound Engine Trigger state management
+        function startAlarmAudioLoop() {
+            if (alarmIntervalId) return;
+            // Play alarm loop every 1.2 seconds
+            playAlarmMelody();
+            alarmIntervalId = setInterval(() => {
+                playAlarmMelody();
+            }, 1200);
+        }
+
+        function stopAlarmAudioLoop() {
+            if (alarmIntervalId) {
+                clearInterval(alarmIntervalId);
+                alarmIntervalId = null;
+            }
+        }
+
+        // Sound Test Helper
+        document.getElementById('testSoundBtn').addEventListener('click', () => {
+            getAudioContext();
+            playAlarmMelody();
+            showToast('알람 테마 멜로디가 정상 재생되었습니다.', 'fa-solid fa-music');
+        });
+
+        // Main Application State
+        let alarms = [];
+        let worldClocks = [];
+        let stopwatchInterval = null;
+        let stopwatchTime = 0; // in ms
+        let stopwatchLaps = [];
+        let isStopwatchRunning = false;
+
+        let timerInterval = null;
+        let timerSecondsLeft = 0;
+        let timerOriginalSeconds = 0;
+        let isTimerRunning = false;
+
+        // Supported World Clock Cities Configuration
+        const timezonePresets = [
+            { id: 'seoul', name: '대한민국 서울', zone: 'Asia/Seoul', desc: 'UTC+09:00' },
+            { id: 'tokyo', name: '일본 도쿄', zone: 'Asia/Tokyo', desc: 'UTC+09:00' },
+            { id: 'london', name: '영국 런던', zone: 'Europe/London', desc: 'UTC+00:00 / BST' },
+            { id: 'newyork', name: '미국 뉴욕', zone: 'America/New_York', desc: 'EST/EDT' },
+            { id: 'paris', name: '프랑스 파리', zone: 'Europe/Paris', desc: 'CET/CEST' },
+            { id: 'sydney', name: '호주 시드니', zone: 'Australia/Sydney', desc: 'AEST/AEDT' },
+            { id: 'losangeles', name: '미국 로스앤젤레스', zone: 'America/Los_Angeles', desc: 'PST/PDT' },
+            { id: 'singapore', name: '싱가포르', zone: 'Asia/Singapore', desc: 'UTC+08:00' }
+        ];
+
+        // Currently playing/active Alarm info object
+        let activeRingingAlarm = null; 
+
+        // Load data on start
+        function loadSavedState() {
+            const savedAlarms = localStorage.getItem('h_suite_alarms');
+            if (savedAlarms) {
+                alarms = JSON.parse(savedAlarms);
+            } else {
+                // Seed sample default alarm (07:30 AM)
+                alarms = [{
+                    id: 'seed-1',
+                    hour: 7,
+                    minute: 30,
+                    label: '즐거운 상쾌한 아침',
+                    repeatDays: [1, 2, 3, 4, 5], // Weekdays
+                    active: true
+                }];
+                saveAlarmsToStorage();
+            }
+
+            const savedWorldClocks = localStorage.getItem('h_suite_world_clocks');
+            if (savedWorldClocks) {
+                worldClocks = JSON.parse(savedWorldClocks);
+            } else {
+                // Seed New York and London as default comparison
+                worldClocks = ['newyork', 'london'];
+                localStorage.setItem('h_suite_world_clocks', JSON.stringify(worldClocks));
+            }
+
+            // Theme sync check
+            const userTheme = localStorage.getItem('h_suite_theme');
+            if (userTheme === 'light') {
+                document.documentElement.classList.add('light');
+                updateThemeIcons(true);
+            } else {
+                document.documentElement.classList.remove('light');
+                updateThemeIcons(false);
+            }
+        }
+
+        function saveAlarmsToStorage() {
+            localStorage.setItem('h_suite_alarms', JSON.stringify(alarms));
+        }
+
+        // Core Ticking Engine (Runs 1 time per second)
+        function tickEngine() {
+            const now = new Date();
+            
+            // 1. Digital Clock Face Update
+            const optionsDate = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('liveDigitalDate').innerText = now.toLocaleDateString('ko-KR', optionsDate);
+            
+            const hoursStr = String(now.getHours()).padStart(2, '0');
+            const minutesStr = String(now.getMinutes()).padStart(2, '0');
+            const secondsStr = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('liveDigitalTime').innerText = `${hoursStr}:${minutesStr}:${secondsStr}`;
+
+            // 2. Analog Clock SVG Rotate Calculations
+            const secAngle = now.getSeconds() * 6; // 360/60
+            const minAngle = now.getMinutes() * 6 + now.getSeconds() * 0.1;
+            const hrAngle = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5;
+
+            document.getElementById('secondHand').setAttribute('transform', `rotate(${secAngle} 100 100)`);
+            document.getElementById('minuteHand').setAttribute('transform', `rotate(${minAngle} 100 100)`);
+            document.getElementById('hourHand').setAttribute('transform', `rotate(${hrAngle} 100 100)`);
+
+            // 3. Monitor & Check Alarm Fires (at second 0)
+            if (now.getSeconds() === 0) {
+                checkAlarmsToFire(now);
+            }
+
+            // 4. Update Active Panel Views dynamically if showing world time
+            if (currentTab === 'world') {
+                renderWorldClocks();
+            }
+        }
+
+        // Tab Switching Mechanism
+        let currentTab = 'alarm';
+        function switchTab(tabId) {
+            currentTab = tabId;
+            // Hide all panels
+            const panels = ['alarm', 'world', 'stopwatch', 'timer'];
+            panels.forEach(p => {
+                document.getElementById(`panel-${p}`).classList.add('hidden');
+                document.getElementById(`tab-${p}`).classList.remove('bg-indigo-600/20', 'border-indigo-500/30', 'text-white');
+                document.getElementById(`tab-${p}`).classList.add('text-slate-400', 'hover:text-slate-200');
+            });
+
+            // Show current active panel
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            activeTab.classList.add('bg-indigo-600/20', 'border-indigo-500/30', 'text-white');
+            activeTab.classList.remove('text-slate-400', 'hover:text-slate-200');
+
+            if (tabId === 'alarm') renderAlarms();
+            if (tabId === 'world') renderWorldClocks();
+        }
+
+        // Rendering Alarm List View
+        function renderAlarms() {
+            const listContainer = document.getElementById('alarmList');
+            if (alarms.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-500">
+                        <i class="fa-regular fa-bell-slash text-4xl mb-3"></i>
+                        <p class="text-sm font-medium">등록된 알람이 없습니다.</p>
+                        <button onclick="openAlarmModal()" class="text-indigo-400 text-xs mt-2 underline">첫 알람 만들어보기</button>
+                    </div>
+                `;
+                document.getElementById('activeAlarmsCounter').innerText = "대기 중인 알람: 0개";
+                return;
+            }
+
+            let html = '';
+            let activeCount = 0;
+
+            alarms.forEach(alarm => {
+                if (alarm.active) activeCount++;
+                const formattedHour = String(alarm.hour).padStart(2, '0');
+                const formattedMinute = String(alarm.minute).padStart(2, '0');
+                const period = alarm.hour >= 12 ? '오후' : '오전';
+                const displayHour = alarm.hour > 12 ? alarm.hour - 12 : (alarm.hour === 0 ? 12 : alarm.hour);
+                
+                // Days string builder
+                const weekdaysKorean = ['일', '월', '화', '수', '목', '금', '토'];
+                let daysText = '한 번만 울림';
+                if (alarm.repeatDays && alarm.repeatDays.length > 0) {
+                    if (alarm.repeatDays.length === 7) {
+                        daysText = '매일';
+                    } else if (alarm.repeatDays.length === 5 && !alarm.repeatDays.includes(0) && !alarm.repeatDays.includes(6)) {
+                        daysText = '평일 반복';
+                    } else {
+                        daysText = '매주 ' + alarm.repeatDays.map(d => weekdaysKorean[d]).join(', ');
+                    }
+                }
+
+                html += `
+                <div class="bg-slate-950/40 hover:bg-slate-950/60 transition-all border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center ${alarm.active ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'bg-slate-800/40 border border-slate-800 text-slate-500'}">
+                            <i class="fa-solid fa-clock text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline space-x-1.5">
+                                <span class="text-xs font-semibold text-slate-400">${period}</span>
+                                <span class="text-2xl font-bold font-digital tracking-tight text-white">${String(displayHour).padStart(2, '0')}:${formattedMinute}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-0.5 font-medium flex items-center gap-1.5">
+                                <span class="font-semibold text-indigo-400">${alarm.label || '알람'}</span>
+                                <span class="text-slate-600">•</span>
+                                <span>${daysText}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2.5">
+                        <!-- Switch toggle button -->
+                        <button onclick="toggleAlarmActive('${alarm.id}')" class="w-12 h-6 rounded-full transition-colors relative focus:outline-none ${alarm.active ? 'bg-indigo-600' : 'bg-slate-800'}" aria-label="알람 토글">
+                            <span class="absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${alarm.active ? 'transform translate-x-6' : ''}"></span>
+                        </button>
+                        <!-- Delete button -->
+                        <button onclick="deleteAlarm('${alarm.id}')" class="w-9 h-9 rounded-xl hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-500/20 flex items-center justify-center transition-all" title="알람 삭제">
+                            <i class="fa-regular fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+            document.getElementById('activeAlarmsCounter').innerText = `대기 중인 알람: ${activeCount}개`;
+        }
+
+        // Toggle state of single Alarm
+        function toggleAlarmActive(id) {
+            const index = alarms.findIndex(a => a.id === id);
+            if (index !== -1) {
+                alarms[index].active = !alarms[index].active;
+                saveAlarmsToStorage();
+                renderAlarms();
+                showToast(alarms[index].active ? '알람이 켜졌습니다.' : '알람이 꺼졌습니다.', 'fa-solid fa-power-off');
+            }
+        }
+
+        // Delete Alarm
+        function deleteAlarm(id) {
+            alarms = alarms.filter(a => a.id !== id);
+            saveAlarmsToStorage();
+            renderAlarms();
+            showToast('알람이 삭제되었습니다.', 'fa-regular fa-trash-can');
+        }
+
+        // Open/Close Alarm Form Modal
+        function openAlarmModal() {
+            // Fill hours & minutes helper
+            const hrSelect = document.getElementById('formHour');
+            const minSelect = document.getElementById('formMinute');
+            hrSelect.innerHTML = '';
+            minSelect.innerHTML = '';
+            
+            for (let i = 0; i < 24; i++) {
+                const label = i >= 12 ? `오후 ${i === 12 ? 12 : i - 12}시` : `오전 ${i === 0 ? 12 : i}시`;
+                hrSelect.innerHTML += `<option value="${i}">${label} (${String(i).padStart(2, '0')}시)</option>`;
+            }
+            for (let i = 0; i < 60; i++) {
+                minSelect.innerHTML += `<option value="${i}">${String(i).padStart(2, '0')}분</option>`;
+            }
+
+            // Reset Form Values
+            document.getElementById('formLabel').value = '';
+            const checkedDays = document.querySelectorAll('input[name="repeatDays"]');
+            checkedDays.forEach(cb => cb.checked = false);
+
+            const modal = document.getElementById('alarmModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeAlarmModal() {
+            const modal = document.getElementById('alarmModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // Saving New Alarm logic
+        function saveAlarm(event) {
+            event.preventDefault();
+            const h = parseInt(document.getElementById('formHour').value);
+            const m = parseInt(document.getElementById('formMinute').value);
+            const label = document.getElementById('formLabel').value.trim() || '알람';
+            
+            // Read checkboxes
+            const checkedDays = [];
+            const checkboxes = document.querySelectorAll('input[name="repeatDays"]:checked');
+            checkboxes.forEach(cb => {
+                checkedDays.push(parseInt(cb.value));
+            });
+
+            const newAlarm = {
+                id: 'alarm-' + Date.now(),
+                hour: h,
+                minute: m,
+                label: label,
+                repeatDays: checkedDays,
+                active: true
+            };
+
+            alarms.push(newAlarm);
+            saveAlarmsToStorage();
+            renderAlarms();
+            closeAlarmModal();
+            showToast('새로운 스마트 알람을 추가했습니다.', 'fa-solid fa-circle-check');
+            
+            // Audio permission bootstrapper
+            getAudioContext();
+        }
+
+        // Alarm triggers matching loop logic
+        function checkAlarmsToFire(nowTimeObj) {
+            const curHr = nowTimeObj.getHours();
+            const curMin = nowTimeObj.getMinutes();
+            const curDay = nowTimeObj.getDay(); // 0 (Sun) to 6 (Sat)
+
+            alarms.forEach(alarm => {
+                if (!alarm.active) return;
+                
+                // Hour and minute match
+                if (alarm.hour === curHr && alarm.minute === curMin) {
+                    // Check if it's repeating
+                    if (alarm.repeatDays && alarm.repeatDays.length > 0) {
+                        // Day matching
+                        if (alarm.repeatDays.includes(curDay)) {
+                            fireAlarm(alarm);
+                        }
+                    } else {
+                        // One-time alarm
+                        fireAlarm(alarm);
+                        // Disable after ring
+                        alarm.active = false;
+                        saveAlarmsToStorage();
+                        renderAlarms();
+                    }
+                }
+            });
+        }
+
+        // Active Ring state UI activation
+        function fireAlarm(alarm) {
+            activeRingingAlarm = alarm;
+            document.getElementById('ringLabelText').innerText = alarm.label || '스마트 기상 알람';
+            
+            const formatHour = String(alarm.hour).padStart(2, '0');
+            const formatMin = String(alarm.minute).padStart(2, '0');
+            document.getElementById('ringDetailText').innerText = `설정 시각: ${alarm.hour >= 12 ? '오후' : '오전'} ${alarm.hour > 12 ? alarm.hour - 12 : alarm.hour}:${formatMin}`;
+            
+            document.getElementById('ringTypeLabel').innerText = "ALARM RINGING";
+            document.getElementById('alarmRingerOverlay').classList.remove('hidden');
+            
+            // Wake device up with sound looping
+            startAlarmAudioLoop();
+        }
+
+        // Snooze (Delayed ring 5 minutes later)
+        function triggerSnooze() {
+            if (!activeRingingAlarm) return;
+            
+            stopAlarmAudioLoop();
+            document.getElementById('alarmRingerOverlay').classList.add('hidden');
+            
+            // Add custom dynamic snooze 5 mins alarm
+            const now = new Date();
+            const snoozeTarget = new Date(now.getTime() + 5 * 60 * 1000); // add 5 mins
+            
+            const snoozedAlarm = {
+                id: 'snooze-' + Date.now(),
+                hour: snoozeTarget.getHours(),
+                minute: snoozeTarget.getMinutes(),
+                label: `스누즈 [연장] - ${activeRingingAlarm.label}`,
+                repeatDays: [],
+                active: true
+            };
+
+            alarms.push(snoozedAlarm);
+            saveAlarmsToStorage();
+            renderAlarms();
+            
+            showToast('알람이 5분 뒤로 연장(스누즈)되었습니다.', 'fa-solid fa-hourglass-start');
+            activeRingingAlarm = null;
+        }
+
+        // Dismiss the active ringer
+        function dismissActiveAlarm() {
+            stopAlarmAudioLoop();
+            document.getElementById('alarmRingerOverlay').classList.add('hidden');
+            showToast('알람을 해제했습니다.', 'fa-regular fa-bell-slash');
+            activeRingingAlarm = null;
+        }
+
+
+        // 3. STOPWATCH CORE LOGIC
+        function toggleStopwatch() {
+            getAudioContext(); // Request audio authorization safely
+            if (isStopwatchRunning) {
+                // Pause it
+                clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
+                document.getElementById('stopwatchStartIcon').className = 'fa-solid fa-play';
+                document.getElementById('stopwatchStartText').innerText = '이어하기';
+                document.getElementById('stopwatchResetBtn').innerText = '전체 리셋';
+            } else {
+                // Start it
+                const startTime = Date.now() - stopwatchTime;
+                stopwatchInterval = setInterval(() => {
+                    stopwatchTime = Date.now() - startTime;
+                    updateStopwatchUI();
+                }, 10); // Precise update every 10ms
+                isStopwatchRunning = true;
+                document.getElementById('stopwatchStartIcon').className = 'fa-solid fa-pause';
+                document.getElementById('stopwatchStartText').innerText = '일시 정지';
+                document.getElementById('stopwatchResetBtn').innerText = '구간 기록 (랩)';
+                document.getElementById('stopwatchResetBtn').disabled = false;
+            }
+        }
+
+        function updateStopwatchUI() {
+            const minutes = Math.floor(stopwatchTime / 60000);
+            const seconds = Math.floor((stopwatchTime % 60000) / 1000);
+            const ms = Math.floor((stopwatchTime % 1000) / 10);
+
+            const displayStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.<span class="text-indigo-400 font-medium">${String(ms).padStart(2, '0')}</span>`;
+            document.getElementById('stopwatchDisplay').innerHTML = displayStr;
+        }
+
+        function resetStopwatch() {
+            if (isStopwatchRunning) {
+                // Recording Lap during run
+                const minutes = Math.floor(stopwatchTime / 60000);
+                const seconds = Math.floor((stopwatchTime % 60000) / 1000);
+                const ms = Math.floor((stopwatchTime % 1000) / 10);
+                
+                const lapStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+                stopwatchLaps.unshift({
+                    id: stopwatchLaps.length + 1,
+                    lapTime: lapStr,
+                    raw: stopwatchTime
+                });
+                renderLaps();
+            } else {
+                // Resetting everything to 0 when paused
+                clearInterval(stopwatchInterval);
+                stopwatchTime = 0;
+                stopwatchLaps = [];
+                isStopwatchRunning = false;
+                updateStopwatchUI();
+                renderLaps();
+                document.getElementById('stopwatchStartIcon').className = 'fa-solid fa-play';
+                document.getElementById('stopwatchStartText').innerText = '시작하기';
+                document.getElementById('stopwatchResetBtn').innerText = '리셋 / 랩';
+                document.getElementById('stopwatchResetBtn').disabled = true;
+            }
+        }
+
+        function renderLaps() {
+            const lapRecords = document.getElementById('lapRecords');
+            const noLapsMsg = document.getElementById('noLapsMsg');
+
+            if (stopwatchLaps.length === 0) {
+                lapRecords.innerHTML = '';
+                noLapsMsg.style.display = 'block';
+                return;
+            }
+
+            noLapsMsg.style.display = 'none';
+            let html = '';
+            stopwatchLaps.forEach((lap, idx) => {
+                // Calculate difference relative to previous lap
+                let diffText = '-';
+                if (idx < stopwatchLaps.length - 1) {
+                    const prevRaw = stopwatchLaps[idx + 1].raw;
+                    const diffRaw = lap.raw - prevRaw;
+                    const diffMin = Math.floor(diffRaw / 60000);
+                    const diffSec = Math.floor((diffRaw % 60000) / 1000);
+                    const diffMs = Math.floor((diffRaw % 1000) / 10);
+                    diffText = `+${String(diffMin).padStart(2, '0')}:${String(diffSec).padStart(2, '0')}.${String(diffMs).padStart(2, '0')}`;
+                }
+
+                html += `
+                <tr class="hover:bg-slate-800/20 text-slate-300">
+                    <td class="py-2.5 font-semibold text-slate-500">Lap ${lap.id}</td>
+                    <td class="py-2.5 font-digital text-indigo-400">${lap.lapTime}</td>
+                    <td class="py-2.5 text-right font-digital text-slate-400">${diffText}</td>
+                </tr>
+                `;
+            });
+            lapRecords.innerHTML = html;
+        }
+
+
+        // 4. TIMER CONTROL LOGIC
+        function updateTimerRing(percent) {
+            const circle = document.getElementById('timerProgressRing');
+            // Full radius perimeter: 2 * Math.PI * 66 = 414.69
+            const strokeDashoffset = 414.69 - (percent * 414.69) / 100;
+            circle.style.strokeDashoffset = strokeDashoffset;
+        }
+
+        function presetTimer(sec) {
+            timerSecondsLeft = sec;
+            timerOriginalSeconds = sec;
+            updateTimerDisplay();
+            updateTimerRing(100);
+            document.getElementById('timerResetBtn').disabled = false;
+        }
+
+        function updateTimerDisplay() {
+            const hrs = Math.floor(timerSecondsLeft / 3600);
+            const mins = Math.floor((timerSecondsLeft % 3600) / 60);
+            const secs = timerSecondsLeft % 60;
+            
+            document.getElementById('timerDisplay').innerText = 
+                `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            getAudioContext();
+            if (isTimerRunning) {
+                // Pause State
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('timerStartBtn').innerText = '타이머 재개';
+                document.getElementById('timerStartBtn').className = 'flex-[2_2_0%] py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg';
+            } else {
+                // Reading input variables if timer is fresh
+                if (timerSecondsLeft === 0) {
+                    const h = parseInt(document.getElementById('timerHour').value) || 0;
+                    const m = parseInt(document.getElementById('timerMin').value) || 0;
+                    const s = parseInt(document.getElementById('timerSec').value) || 0;
+                    
+                    timerSecondsLeft = h * 3600 + m * 60 + s;
+                    timerOriginalSeconds = timerSecondsLeft;
+                    
+                    if (timerSecondsLeft <= 0) {
+                        showToast('동작 시각을 1초 이상 설정해 주세요.', 'fa-solid fa-triangle-exclamation');
+                        return;
+                    }
+                }
+
+                // Launching ticker
+                document.getElementById('timerInputArea').classList.add('opacity-30', 'pointer-events-none');
+                document.getElementById('timerPresets').classList.add('opacity-30', 'pointer-events-none');
+                
+                timerInterval = setInterval(() => {
+                    if (timerSecondsLeft > 0) {
+                        timerSecondsLeft--;
+                        updateTimerDisplay();
+                        const percent = (timerSecondsLeft / timerOriginalSeconds) * 100;
+                        updateTimerRing(percent);
+                    } else {
+                        // Timer Complete Event Trigger
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        timerFinishNotification();
+                    }
+                }, 1000);
+
+                isTimerRunning = true;
+                document.getElementById('timerStartBtn').innerText = '일시 정지';
+                document.getElementById('timerStartBtn').className = 'flex-[2_2_0%] py-3 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700/50';
+                document.getElementById('timerResetBtn').disabled = false;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSecondsLeft = 0;
+            timerOriginalSeconds = 0;
+            updateTimerDisplay();
+            updateTimerRing(100);
+
+            document.getElementById('timerInputArea').classList.remove('opacity-30', 'pointer-events-none');
+            document.getElementById('timerPresets').classList.remove('opacity-30', 'pointer-events-none');
+            document.getElementById('timerStartBtn').innerText = '타이머 가동';
+            document.getElementById('timerStartBtn').className = 'flex-[2_2_0%] py-3 text-xs font-bold rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg';
+            document.getElementById('timerResetBtn').disabled = true;
+        }
+
+        function timerFinishNotification() {
+            // Trigger emergency custom banner
+            document.getElementById('ringLabelText').innerText = "스마트 카운트다운 완료!";
+            document.getElementById('ringDetailText').innerText = "설정되었던 지정 타이머가 만료되었습니다.";
+            document.getElementById('ringTypeLabel').innerText = "TIMER COMPLETE";
+            document.getElementById('alarmRingerOverlay').classList.remove('hidden');
+            
+            startAlarmAudioLoop();
+            resetTimer();
+        }
+
+
+        // 5. WORLD CLOCK MODULE LOGIC
+        function renderWorldClocks() {
+            const wcContainer = document.getElementById('worldClockList');
+            if (worldClocks.length === 0) {
+                wcContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-500">
+                        <i class="fa-solid fa-globe text-4xl mb-3"></i>
+                        <p class="text-sm font-medium">조회 중인 글로벌 도시가 없습니다.</p>
+                        <button onclick="openWorldClockModal()" class="text-emerald-400 text-xs mt-2 underline">세계 주요 도시 추가</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const now = new Date();
+            let html = '';
+
+            worldClocks.forEach(id => {
+                const city = timezonePresets.find(c => c.id === id);
+                if (!city) return;
+
+                // Derive local time inside specified timezones safely
+                try {
+                    const localTimeString = now.toLocaleTimeString('ko-KR', {
+                        timeZone: city.zone,
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    
+                    const localDateString = now.toLocaleDateString('ko-KR', {
+                        timeZone: city.zone,
+                        month: 'short',
+                        day: 'numeric',
+                        weekday: 'short'
+                    });
+
+                    html += `
+                    <div class="bg-slate-950/40 hover:bg-slate-950/60 transition-all border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-400 flex items-center justify-center">
+                                <i class="fa-regular fa-compass text-base"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">${city.name}</h4>
+                                <span class="text-[10px] text-slate-500 font-semibold tracking-wider">${city.desc} • ${localDateString}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xl font-bold font-digital tracking-wider text-emerald-400">${localTimeString}</span>
+                            <button onclick="removeWorldClock('${city.id}')" class="w-8 h-8 rounded-lg hover:bg-rose-500/10 text-slate-600 hover:text-rose-400 flex items-center justify-center transition-all" title="도시 삭제">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                } catch (e) {
+                    console.error('Timezone offset format is invalid', e);
+                }
+            });
+
+            wcContainer.innerHTML = html;
+        }
+
+        function openWorldClockModal() {
+            const listArea = document.getElementById('timezoneSelectorArea');
+            listArea.innerHTML = '';
+
+            timezonePresets.forEach(preset => {
+                const isAlreadyAdded = worldClocks.includes(preset.id);
+                listArea.innerHTML += `
+                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-800/60 bg-slate-950/40 hover:bg-slate-950/80 transition-all">
+                    <div>
+                        <span class="text-xs font-bold text-slate-200 block">${preset.name}</span>
+                        <span class="text-[10px] text-slate-500">${preset.desc} (${preset.zone})</span>
+                    </div>
+                    ${isAlreadyAdded ? 
+                        `<span class="text-xs text-slate-500 font-semibold bg-slate-800/50 px-2 py-1 rounded-lg">추가됨</span>` : 
+                        `<button onclick="addWorldClock('${preset.id}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-all">추가</button>`
+                    }
+                </div>
+                `;
+            });
+
+            const modal = document.getElementById('worldClockModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeWorldClockModal() {
+            const modal = document.getElementById('worldClockModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function addWorldClock(id) {
+            if (!worldClocks.includes(id)) {
+                worldClocks.push(id);
+                localStorage.setItem('h_suite_world_clocks', JSON.stringify(worldClocks));
+                renderWorldClocks();
+                closeWorldClockModal();
+                showToast('타임존 시계가 성공적으로 조율되었습니다.', 'fa-solid fa-earth-asia');
+            }
+        }
+
+        function removeWorldClock(id) {
+            worldClocks = worldClocks.filter(c => c !== id);
+            localStorage.setItem('h_suite_world_clocks', JSON.stringify(worldClocks));
+            renderWorldClocks();
+            showToast('도시를 목록에서 제거했습니다.', 'fa-solid fa-circle-minus');
+        }
+
+
+        // 6. DESIGN THEMING AND TOASTS UTILITIES
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isLightNow = document.documentElement.classList.toggle('light');
+            localStorage.setItem('h_suite_theme', isLightNow ? 'light' : 'dark');
+            updateThemeIcons(isLightNow);
+            showToast(isLightNow ? '라이트 테마로 조정되었습니다.' : '다크 스페이스 테마로 조정되었습니다.', isLightNow ? 'fa-regular fa-sun' : 'fa-regular fa-moon');
+        });
+
+        function updateThemeIcons(isLight) {
+            const icon = document.getElementById('themeIcon');
+            if (isLight) {
+                icon.className = 'fa-solid fa-sun text-yellow-500';
+                document.body.className = "h-full bg-slate-100 text-slate-900 transition-colors duration-300";
+            } else {
+                icon.className = 'fa-solid fa-moon text-slate-300';
+                document.body.className = "h-full bg-slate-900 text-slate-100 transition-colors duration-300";
+            }
+        }
+
+        // Custom Slick Toast Dialog dismiss rules
+        let toastTimeout = null;
+        function showToast(message, iconClass = 'fa-solid fa-info-circle') {
+            const toast = document.getElementById('customToast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMsg');
+
+            icon.className = iconClass + ' text-brand-500 text-base';
+            msg.innerText = message;
+
+            clearTimeout(toastTimeout);
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Load states on Window Ready & boot intervals
+        window.onload = function() {
+            loadSavedState();
+            
+            // Render active lists initial state
+            renderAlarms();
+            renderWorldClocks();
+
+            // Run central real-time tick engine on start
+            tickEngine();
+            setInterval(tickEngine, 1000);
+        }
+    </script>
+</body>
+</h
